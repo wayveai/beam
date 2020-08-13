@@ -52,6 +52,7 @@ import org.apache.beam.sdk.options.PortablePipelineOptions.RetrievalServiceType;
 import org.apache.beam.vendor.grpc.v1p26p0.com.google.protobuf.Struct;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Preconditions;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.SparkContext;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -106,7 +107,14 @@ public class SparkPipelineRunner implements PortablePipelineRunner {
         pipelineOptions.getFilesToStage().size());
     LOG.debug("Staging files: {}", pipelineOptions.getFilesToStage());
 
-    final JavaSparkContext jsc = SparkContextFactory.getSparkContext(pipelineOptions);
+    LOG.info("Running Wayve Flavour of SparkPipelineRunner for Azure Databricks.");
+    final SparkContextOptions contextOptions = pipelineOptions.as(SparkContextOptions.class);
+    final JavaSparkContext databricksContext = JavaSparkContext.fromSparkContext(SparkContext.getOrCreate());
+    contextOptions.setUsesProvidedSparkContext(true);
+    contextOptions.setProvidedSparkContext(databricksContext);
+
+    final JavaSparkContext jsc = SparkContextFactory.getSparkContext(contextOptions);
+
     LOG.info(String.format("Running job %s on Spark master %s", jobInfo.jobId(), jsc.master()));
     AggregatorsAccumulator.init(pipelineOptions, jsc);
 
